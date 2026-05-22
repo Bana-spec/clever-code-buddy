@@ -222,6 +222,7 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
         onNew={handleNew}
         onDelete={handleDelete}
         onLogout={onLock}
+        onChangeApiKey={onChangeApiKey}
         open={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}
       />
