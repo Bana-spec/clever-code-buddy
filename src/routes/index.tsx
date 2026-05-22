@@ -6,7 +6,7 @@ import { MatrixRain } from "@/components/MatrixRain";
 import { PasswordGate } from "@/components/PasswordGate";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatMessageView } from "@/components/ChatMessage";
-import { ChatInput } from "@/components/ChatInput";
+import { ChatInput, type SendMode } from "@/components/ChatInput";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import {
@@ -14,6 +14,7 @@ import {
   type Conversation, type ChatMessage,
 } from "@/lib/chat-storage";
 import { sendChat } from "@/lib/chat.functions";
+import { humanizeText, detectAiText } from "@/lib/tools.functions";
 
 export const Route = createFileRoute("/")({
   component: NexusApp,
