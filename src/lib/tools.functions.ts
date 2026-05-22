@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const textInput = z.object({ text: z.string().min(1).max(20000) });
+const textInput = z.object({
+  text: z.string().min(1).max(20000),
+  apiKey: z.string().min(10).max(400).optional(),
+});
 
 const HUMANIZE_PROMPT = `You are a text humanizer. Rewrite the user's text so it reads as natural, human-written prose that bypasses AI-detection heuristics.
 
@@ -26,9 +29,9 @@ Respond ONLY with valid JSON, no markdown fences, in this exact shape:
   "notes": "<one or two sentence explanation>"
 }`;
 
-async function callGateway(system: string, user: string) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI gateway not configured.");
+async function callGateway(system: string, user: string, userKey?: string) {
+  const apiKey = userKey || process.env.LOVABLE_API_KEY;
+  if (!apiKey) throw new Error("No API key. Open settings and paste your key.");
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -45,6 +48,7 @@ async function callGateway(system: string, user: string) {
   if (!res.ok) {
     if (res.status === 429) throw new Error("Rate limit hit. Wait a moment and try again.");
     if (res.status === 402) throw new Error("AI credits exhausted.");
+    if (res.status === 401 || res.status === 403) throw new Error("Invalid API key. Update it in settings.");
     throw new Error("AI gateway returned an error.");
   }
   const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -54,7 +58,7 @@ async function callGateway(system: string, user: string) {
 export const humanizeText = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => textInput.parse(i))
   .handler(async ({ data }) => {
-    const content = await callGateway(HUMANIZE_PROMPT, data.text);
+    const content = await callGateway(HUMANIZE_PROMPT, data.text, data.apiKey);
     return { content: content.trim() };
   });
 

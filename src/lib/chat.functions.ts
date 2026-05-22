@@ -64,6 +64,9 @@ export const sendChat = createServerFn({ method: "POST" })
       if (response.status === 402) {
         throw new Error("AI credits exhausted. Add credits in workspace settings.");
       }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Invalid API key. Update it in settings.");
+      }
       const text = await response.text().catch(() => "");
       console.error("AI gateway error:", response.status, text);
       throw new Error("AI gateway returned an error.");
