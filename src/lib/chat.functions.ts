@@ -8,6 +8,7 @@ const messageSchema = z.object({
 
 const inputSchema = z.object({
   messages: z.array(messageSchema).min(1).max(60),
+  apiKey: z.string().min(10).max(400).optional(),
 });
 
 const SYSTEM_PROMPT = `You are NEXUS, a highly intelligent, calm, and direct AI assistant operating in a terminal-style interface.
@@ -39,9 +40,9 @@ When you don't know something, say so. Don't fabricate.`;
 export const sendChat = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const apiKey = data.apiKey || process.env.LOVABLE_API_KEY;
     if (!apiKey) {
-      throw new Error("AI gateway not configured.");
+      throw new Error("No API key. Open settings and paste your key.");
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -62,6 +63,9 @@ export const sendChat = createServerFn({ method: "POST" })
       }
       if (response.status === 402) {
         throw new Error("AI credits exhausted. Add credits in workspace settings.");
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Invalid API key. Update it in settings.");
       }
       const text = await response.text().catch(() => "");
       console.error("AI gateway error:", response.status, text);

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Menu } from "lucide-react";
 import { MatrixRain } from "@/components/MatrixRain";
 import { PasswordGate } from "@/components/PasswordGate";
+import { ApiKeyGate } from "@/components/ApiKeyGate";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatMessageView } from "@/components/ChatMessage";
 import { ChatInput, type SendMode } from "@/components/ChatInput";
@@ -13,6 +14,7 @@ import {
   loadConversations, saveConversations, newConversation, titleFrom,
   type Conversation, type ChatMessage,
 } from "@/lib/chat-storage";
+import { getApiKey, clearApiKey } from "@/lib/api-key";
 import { sendChat } from "@/lib/chat.functions";
 import { humanizeText, detectAiText } from "@/lib/tools.functions";
 
@@ -28,17 +30,24 @@ export const Route = createFileRoute("/")({
 
 function NexusApp() {
   const [unlocked, setUnlocked] = useState(false);
+  const [hasKey, setHasKey] = useState<boolean>(() => !!getApiKey());
 
   return (
     <div className="min-h-screen text-foreground relative">
       <MatrixRain />
       {!unlocked && <PasswordGate onUnlock={() => setUnlocked(true)} />}
-      {unlocked && <ChatApp onLock={() => setUnlocked(false)} />}
+      {unlocked && !hasKey && <ApiKeyGate onReady={() => setHasKey(true)} />}
+      {unlocked && hasKey && (
+        <ChatApp
+          onLock={() => setUnlocked(false)}
+          onChangeApiKey={() => { clearApiKey(); setHasKey(false); }}
+        />
+      )}
     </div>
   );
 }
 
-function ChatApp({ onLock }: { onLock: () => void }) {
+function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKey: () => void }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -99,7 +108,8 @@ function ChatApp({ onLock }: { onLock: () => void }) {
     setError(null);
     try {
       const payload = history.map((m) => ({ role: m.role, content: m.content }));
-      const res = await callChat({ data: { messages: payload } });
+      const apiKey = getApiKey() ?? undefined;
+      const res = await callChat({ data: { messages: payload, apiKey } });
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -124,11 +134,12 @@ function ChatApp({ onLock }: { onLock: () => void }) {
     setError(null);
     try {
       let content = "";
+      const apiKey = getApiKey() ?? undefined;
       if (mode === "humanize") {
-        const res = await callHumanize({ data: { text } });
+        const res = await callHumanize({ data: { text, apiKey } });
         content = "**[ humanized output ]**\n\n" + (res.content || "(empty)");
       } else {
-        const res = await callDetect({ data: { text } });
+        const res = await callDetect({ data: { text, apiKey } });
         if (res.result) {
           const r = res.result;
           const bar = "█".repeat(Math.round(r.ai_probability / 5)).padEnd(20, "░");
@@ -211,6 +222,7 @@ function ChatApp({ onLock }: { onLock: () => void }) {
         onNew={handleNew}
         onDelete={handleDelete}
         onLogout={onLock}
+        onChangeApiKey={onChangeApiKey}
         open={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}
       />
