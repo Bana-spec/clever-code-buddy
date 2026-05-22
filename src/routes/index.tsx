@@ -47,8 +47,8 @@ function ChatApp({ onLock }: { onLock: () => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const callChat = useServerFn(sendChat);
-
-  // Load on mount
+  const callHumanize = useServerFn(humanizeText);
+  const callDetect = useServerFn(detectAiText);
   useEffect(() => {
     const list = loadConversations();
     setConversations(list);
