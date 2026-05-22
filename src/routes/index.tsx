@@ -108,7 +108,8 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
     setError(null);
     try {
       const payload = history.map((m) => ({ role: m.role, content: m.content }));
-      const res = await callChat({ data: { messages: payload } });
+      const apiKey = getApiKey() ?? undefined;
+      const res = await callChat({ data: { messages: payload, apiKey } });
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -133,11 +134,12 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
     setError(null);
     try {
       let content = "";
+      const apiKey = getApiKey() ?? undefined;
       if (mode === "humanize") {
-        const res = await callHumanize({ data: { text } });
+        const res = await callHumanize({ data: { text, apiKey } });
         content = "**[ humanized output ]**\n\n" + (res.content || "(empty)");
       } else {
-        const res = await callDetect({ data: { text } });
+        const res = await callDetect({ data: { text, apiKey } });
         if (res.result) {
           const r = res.result;
           const bar = "█".repeat(Math.round(r.ai_probability / 5)).padEnd(20, "░");
