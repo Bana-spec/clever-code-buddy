@@ -64,14 +64,20 @@ export const detectAiText = createServerFn({ method: "POST" })
     const raw = await callGateway(DETECT_PROMPT, data.text);
     // Strip accidental code fences
     const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-    let parsed: unknown = null;
+    type DetectResult = {
+      ai_probability: number;
+      verdict: string;
+      confidence: string;
+      signals: string[];
+      notes: string;
+    } | null;
+    let parsed: DetectResult = null;
     try {
-      parsed = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned) as DetectResult;
     } catch {
-      // try to extract first JSON object
       const m = cleaned.match(/\{[\s\S]*\}/);
       if (m) {
-        try { parsed = JSON.parse(m[0]); } catch { /* ignore */ }
+        try { parsed = JSON.parse(m[0]) as DetectResult; } catch { /* ignore */ }
       }
     }
     return { raw: cleaned, result: parsed };
