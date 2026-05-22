@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2, LogOut } from "lucide-react";
+import { Plus, MessageSquare, Trash2, LogOut, KeyRound } from "lucide-react";
 import type { Conversation } from "@/lib/chat-storage";
 
 interface Props {
@@ -8,12 +8,13 @@ interface Props {
   onNew: () => void;
   onDelete: (id: string) => void;
   onLogout: () => void;
+  onChangeApiKey: () => void;
   open: boolean;
   onCloseMobile: () => void;
 }
 
 export function ChatSidebar({
-  conversations, activeId, onSelect, onNew, onDelete, onLogout, open, onCloseMobile,
+  conversations, activeId, onSelect, onNew, onDelete, onLogout, onChangeApiKey, open, onCloseMobile,
 }: Props) {
   return (
     <>
@@ -83,6 +84,12 @@ export function ChatSidebar({
           ))}
         </div>
 
+        <button
+          onClick={onChangeApiKey}
+          className="mx-3 mt-3 flex items-center justify-center gap-2 py-2 border border-border rounded-md text-terminal-dim hover:text-terminal hover:border-terminal/50 transition-colors text-xs"
+        >
+          <KeyRound size={12} /> api key
+        </button>
         <button
           onClick={onLogout}
           className="m-3 flex items-center justify-center gap-2 py-2 border border-border rounded-md text-terminal-dim hover:text-danger hover:border-danger/50 transition-colors text-xs"
