@@ -65,7 +65,7 @@ export const humanizeText = createServerFn({ method: "POST" })
 export const detectAiText = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => textInput.parse(i))
   .handler(async ({ data }) => {
-    const raw = await callGateway(DETECT_PROMPT, data.text);
+    const raw = await callGateway(DETECT_PROMPT, data.text, data.apiKey);
     // Strip accidental code fences
     const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
     type DetectResult = {
