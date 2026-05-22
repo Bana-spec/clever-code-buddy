@@ -6,7 +6,7 @@ import { MatrixRain } from "@/components/MatrixRain";
 import { PasswordGate } from "@/components/PasswordGate";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatMessageView } from "@/components/ChatMessage";
-import { ChatInput } from "@/components/ChatInput";
+import { ChatInput, type SendMode } from "@/components/ChatInput";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import {
@@ -14,6 +14,7 @@ import {
   type Conversation, type ChatMessage,
 } from "@/lib/chat-storage";
 import { sendChat } from "@/lib/chat.functions";
+import { humanizeText, detectAiText } from "@/lib/tools.functions";
 
 export const Route = createFileRoute("/")({
   component: NexusApp,
@@ -46,8 +47,8 @@ function ChatApp({ onLock }: { onLock: () => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const callChat = useServerFn(sendChat);
-
-  // Load on mount
+  const callHumanize = useServerFn(humanizeText);
+  const callDetect = useServerFn(detectAiText);
   useEffect(() => {
     const list = loadConversations();
     setConversations(list);
@@ -118,27 +119,72 @@ function ChatApp({ onLock }: { onLock: () => void }) {
     }
   };
 
-  const handleSend = async (text: string) => {
+  const runTool = async (conv: Conversation, history: ChatMessage[], mode: "humanize" | "detect", text: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      let content = "";
+      if (mode === "humanize") {
+        const res = await callHumanize({ data: { text } });
+        content = "**[ humanized output ]**\n\n" + (res.content || "(empty)");
+      } else {
+        const res = await callDetect({ data: { text } });
+        if (res.result) {
+          const r = res.result;
+          const bar = "█".repeat(Math.round(r.ai_probability / 5)).padEnd(20, "░");
+          content =
+            `**[ AI-detection scan ]**\n\n` +
+            `\`${bar}\` **${r.ai_probability}%** AI\n\n` +
+            `- verdict: **${r.verdict}**\n` +
+            `- confidence: ${r.confidence}\n` +
+            `- signals: ${r.signals?.map((s: string) => `\`${s}\``).join(", ") || "—"}\n\n` +
+            `${r.notes || ""}`;
+        } else {
+          content = "**[ AI-detection scan ]**\n\n" + res.raw;
+        }
+      }
+      const assistantMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content,
+        createdAt: Date.now(),
+      };
+      upsert({ ...conv, messages: [...history, assistantMsg], updatedAt: Date.now() });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSend = async (text: string, mode: SendMode = "chat") => {
     let conv = active;
     if (!conv) {
       conv = newConversation();
     }
+    const label =
+      mode === "humanize" ? `/humanize\n\n${text}` :
+      mode === "detect" ? `/detect\n\n${text}` : text;
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: text,
+      content: label,
       createdAt: Date.now(),
     };
     const history = [...conv.messages, userMsg];
     const titled: Conversation = {
       ...conv,
-      title: conv.messages.length === 0 ? titleFrom(text) : conv.title,
+      title: conv.messages.length === 0 ? titleFrom(mode === "chat" ? text : `${mode}: ${text}`) : conv.title,
       messages: history,
       updatedAt: Date.now(),
     };
     upsert(titled);
     setActiveId(titled.id);
-    await runChat(titled, history);
+    if (mode === "chat") {
+      await runChat(titled, history);
+    } else {
+      await runTool(titled, history, mode, text);
+    }
   };
 
   const handleRegenerate = async () => {
