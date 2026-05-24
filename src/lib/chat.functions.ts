@@ -45,15 +45,18 @@ export const sendChat = createServerFn({ method: "POST" })
       throw new Error("No API key. Open settings and paste your key.");
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...data.messages],
+        model: "claude-haiku-4-5",
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: data.messages.filter((m) => m.role !== "system"),
       }),
     });
 
