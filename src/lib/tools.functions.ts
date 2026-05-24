@@ -33,15 +33,18 @@ async function callGateway(system: string, user: string, userKey?: string) {
   const apiKey = userKey || process.env.LOVABLE_API_KEY;
   if (!apiKey) throw new Error("No API key. Open settings and paste your key.");
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
-      model: "google/gemini-2.5-pro",
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
+      model: "claude-haiku-4-5",
+      max_tokens: 1024,
+      system,
+      messages: [{ role: "user", content: user }],
     }),
   });
 
@@ -51,8 +54,8 @@ async function callGateway(system: string, user: string, userKey?: string) {
     if (res.status === 401 || res.status === 403) throw new Error("Invalid API key. Update it in settings.");
     throw new Error("AI gateway returned an error.");
   }
-  const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return json.choices?.[0]?.message?.content ?? "";
+  const json = (await res.json()) as { content?: Array<{ text?: string }> };
+  return json.content?.[0]?.text ?? "";
 }
 
 export const humanizeText = createServerFn({ method: "POST" })
