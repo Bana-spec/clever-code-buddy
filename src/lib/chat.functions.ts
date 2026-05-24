@@ -76,8 +76,8 @@ export const sendChat = createServerFn({ method: "POST" })
     }
 
     const json = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      content?: Array<{ text?: string }>;
     };
-    const content = json.choices?.[0]?.message?.content ?? "";
+    const content = json.content?.[0]?.text ?? "";
     return { content };
   });
