@@ -1,10 +1,10 @@
-import { Code2, Brain, Bug, FileText } from "lucide-react";
+import { Code2, Rocket, Wrench, Boxes } from "lucide-react";
 
 const SUGGESTIONS = [
-  { icon: Code2, title: "explain a concept", prompt: "Explain how async/await works in JavaScript with a small example." },
-  { icon: Bug, title: "debug code", prompt: "Help me debug this error: 'TypeError: Cannot read properties of undefined'." },
-  { icon: Brain, title: "challenge an idea", prompt: "I think recursion is always better than loops. Push back on this — be critical." },
-  { icon: FileText, title: "plan something", prompt: "Help me build a 2-week study plan for learning data structures." },
+  { icon: Rocket, title: "build an app", prompt: "Build a small URL shortener web app with a React frontend and a Node/Express backend using SQLite. Give me the full file structure and all file contents." },
+  { icon: Code2, title: "generate a script", prompt: "Write a Python script that watches a folder for new images and automatically compresses them to WebP, preserving originals in a backup folder." },
+  { icon: Wrench, title: "fix / refactor", prompt: "Refactor this code for clarity and performance:\n\n```js\n// paste your code here\n```" },
+  { icon: Boxes, title: "add a feature", prompt: "I have a Next.js app. Add JWT-based authentication with login, signup, and a protected /dashboard route. Show all new and changed files." },
 ];
 
 interface Props {
@@ -13,21 +13,20 @@ interface Props {
 
 export function WelcomeScreen({ onPick }: Props) {
   return (
-    <div className="flex-1 flex items-center justify-center px-4">
+    <div className="flex-1 flex items-center justify-center px-4 overflow-y-auto py-10">
       <div className="max-w-2xl w-full text-center animate-fade-in">
         <div className="inline-block text-left text-xs text-terminal-dim mb-6 font-mono">
-          <div>nexus@secure:~$ <span className="text-terminal">./boot --secure</span></div>
-          <div className="text-terminal">[ ok ] kernel loaded</div>
-          <div className="text-terminal">[ ok ] vault decrypted</div>
-          <div className="text-terminal">[ ok ] ai gateway online</div>
-          <div>nexus@secure:~$ <span className="cursor-blink"> </span></div>
+          <div>forge@local:~$ <span className="text-terminal">./forge --ready</span></div>
+          <div className="text-terminal">[ ok ] model online</div>
+          <div className="text-terminal">[ ok ] context memory loaded</div>
+          <div>forge@local:~$ <span className="cursor-blink"> </span></div>
         </div>
 
         <h1 className="text-4xl md:text-5xl font-bold text-terminal text-glow-strong tracking-wider mb-3">
-          NEXUS
+          FORGE
         </h1>
         <p className="text-muted-foreground text-sm mb-10">
-          direct, grounded, and built to help you improve.
+          describe the idea — get the code. from concept to working files.
         </p>
 
         <div className="grid sm:grid-cols-2 gap-2.5">
@@ -43,7 +42,7 @@ export function WelcomeScreen({ onPick }: Props) {
                   {s.title}
                 </span>
               </div>
-              <div className="text-foreground/80 text-sm leading-snug">
+              <div className="text-foreground/80 text-sm leading-snug line-clamp-3">
                 {s.prompt}
               </div>
             </button>

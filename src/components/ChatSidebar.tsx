@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2, LogOut, KeyRound } from "lucide-react";
+import { Plus, MessageSquare, Trash2, KeyRound } from "lucide-react";
 import type { Conversation } from "@/lib/chat-storage";
 
 interface Props {
@@ -7,14 +7,13 @@ interface Props {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
-  onLogout: () => void;
   onChangeApiKey: () => void;
   open: boolean;
   onCloseMobile: () => void;
 }
 
 export function ChatSidebar({
-  conversations, activeId, onSelect, onNew, onDelete, onLogout, onChangeApiKey, open, onCloseMobile,
+  conversations, activeId, onSelect, onNew, onDelete, onChangeApiKey, open, onCloseMobile,
 }: Props) {
   return (
     <>
@@ -38,10 +37,10 @@ export function ChatSidebar({
             <span className="ml-auto text-[10px] text-terminal-dim">v1.0</span>
           </div>
           <div className="text-xl font-bold text-terminal text-glow tracking-wider">
-            NEXUS
+            FORGE
           </div>
           <div className="text-[10px] text-terminal-dim uppercase tracking-widest">
-            ai · terminal
+            idea → code
           </div>
         </div>
 
@@ -49,16 +48,16 @@ export function ChatSidebar({
           onClick={onNew}
           className="m-3 flex items-center justify-center gap-2 py-2.5 border border-terminal/40 rounded-md text-terminal hover:bg-terminal/10 hover:border-terminal transition-colors text-sm font-bold"
         >
-          <Plus size={14} /> new session
+          <Plus size={14} /> new project
         </button>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           <div className="text-[10px] text-terminal-dim uppercase tracking-widest px-2 py-2">
-            ── sessions ──
+            ── projects ──
           </div>
           {conversations.length === 0 && (
             <div className="px-3 py-4 text-xs text-terminal-dim italic">
-              no sessions yet. start one above.
+              no projects yet. start one above.
             </div>
           )}
           {conversations.map((c) => (
@@ -86,15 +85,9 @@ export function ChatSidebar({
 
         <button
           onClick={onChangeApiKey}
-          className="mx-3 mt-3 flex items-center justify-center gap-2 py-2 border border-border rounded-md text-terminal-dim hover:text-terminal hover:border-terminal/50 transition-colors text-xs"
+          className="m-3 flex items-center justify-center gap-2 py-2 border border-border rounded-md text-terminal-dim hover:text-terminal hover:border-terminal/50 transition-colors text-xs"
         >
-          <KeyRound size={12} /> api key
-        </button>
-        <button
-          onClick={onLogout}
-          className="m-3 flex items-center justify-center gap-2 py-2 border border-border rounded-md text-terminal-dim hover:text-danger hover:border-danger/50 transition-colors text-xs"
-        >
-          <LogOut size={12} /> lock vault
+          <KeyRound size={12} /> change api key
         </button>
       </aside>
     </>
