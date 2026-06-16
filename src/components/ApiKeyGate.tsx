@@ -24,21 +24,21 @@ export function ApiKeyGate({ onReady }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background terminal-grid p-6">
       <div className="absolute top-4 left-6 text-xs text-terminal-dim font-mono">
-        nexus@secure:~$ provision-key<span className="text-terminal cursor-blink"> </span>
+        forge@local:~$ provision-key<span className="text-terminal cursor-blink"> </span>
       </div>
 
       <form onSubmit={submit} className="w-full max-w-md space-y-5 animate-fade-in">
         <div className="text-center">
-          <div className="text-4xl font-bold text-terminal text-glow-strong tracking-widest">NEXUS</div>
+          <div className="text-4xl font-bold text-terminal text-glow-strong tracking-widest">FORGE</div>
           <div className="text-xs uppercase tracking-[0.3em] text-terminal-dim mt-2">
-            api key required
+            idea → code
           </div>
         </div>
 
         <div className="text-xs text-muted-foreground leading-relaxed border border-border rounded-md p-3 bg-card/50">
-          <span className="text-amber">⚠</span> Paste your <strong className="text-terminal-bright">Lovable AI API key</strong> to
-          activate the assistant. The key is stored locally in your browser only — never uploaded
-          anywhere except the AI gateway when you send a message.
+          <span className="text-amber">⚠</span> Paste your <strong className="text-terminal-bright">Anthropic API key</strong> to
+          activate the code generator. The key is stored locally in your browser only — never uploaded
+          anywhere except Anthropic when you send a message.
         </div>
 
         <label className="block">
@@ -48,7 +48,7 @@ export function ApiKeyGate({ onReady }: Props) {
             value={key}
             autoFocus
             onChange={(e) => setKey(e.target.value)}
-            placeholder="sk-..."
+            placeholder="sk-ant-..."
             className="mt-1 w-full bg-input border border-border rounded-md px-3 py-2 text-terminal text-glow font-mono focus:outline-none focus:border-terminal focus:border-glow"
           />
         </label>
@@ -67,7 +67,7 @@ export function ApiKeyGate({ onReady }: Props) {
         </button>
 
         <div className="text-[10px] text-terminal-dim text-center">
-          stored in localStorage · wiped by recovery passcode
+          stored in localStorage · change anytime from sidebar
         </div>
       </form>
     </div>

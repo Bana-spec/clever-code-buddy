@@ -3,11 +3,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Menu } from "lucide-react";
 import { MatrixRain } from "@/components/MatrixRain";
-import { PasswordGate } from "@/components/PasswordGate";
 import { ApiKeyGate } from "@/components/ApiKeyGate";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatMessageView } from "@/components/ChatMessage";
-import { ChatInput, type SendMode } from "@/components/ChatInput";
+import { ChatInput } from "@/components/ChatInput";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import {
@@ -16,30 +15,26 @@ import {
 } from "@/lib/chat-storage";
 import { getApiKey, clearApiKey } from "@/lib/api-key";
 import { sendChat } from "@/lib/chat.functions";
-import { humanizeText, detectAiText } from "@/lib/tools.functions";
 
 export const Route = createFileRoute("/")({
-  component: NexusApp,
+  component: ForgeApp,
   head: () => ({
     meta: [
-      { title: "NEXUS // Secure AI Terminal" },
-      { name: "description", content: "Direct, terminal-style AI assistant with encrypted local sessions and self-destruct privacy controls." },
+      { title: "FORGE // Idea → Code AI" },
+      { name: "description", content: "AI code generator that turns ideas into complete, runnable code with full project structure. Conversation memory keeps your project context across turns." },
     ],
   }),
 });
 
-function NexusApp() {
-  const [unlocked, setUnlocked] = useState(false);
+function ForgeApp() {
   const [hasKey, setHasKey] = useState<boolean>(() => !!getApiKey());
 
   return (
     <div className="min-h-screen text-foreground relative">
       <MatrixRain />
-      {!unlocked && <PasswordGate onUnlock={() => setUnlocked(true)} />}
-      {unlocked && !hasKey && <ApiKeyGate onReady={() => setHasKey(true)} />}
-      {unlocked && hasKey && (
+      {!hasKey && <ApiKeyGate onReady={() => setHasKey(true)} />}
+      {hasKey && (
         <ChatApp
-          onLock={() => setUnlocked(false)}
           onChangeApiKey={() => { clearApiKey(); setHasKey(false); }}
         />
       )}
@@ -47,7 +42,7 @@ function NexusApp() {
   );
 }
 
-function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKey: () => void }) {
+function ChatApp({ onChangeApiKey }: { onChangeApiKey: () => void }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,15 +51,13 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const callChat = useServerFn(sendChat);
-  const callHumanize = useServerFn(humanizeText);
-  const callDetect = useServerFn(detectAiText);
+
   useEffect(() => {
     const list = loadConversations();
     setConversations(list);
     if (list.length) setActiveId(list[0].id);
   }, []);
 
-  // Persist on change
   useEffect(() => {
     if (conversations.length > 0 || loadConversations().length > 0) {
       saveConversations(conversations);
@@ -83,8 +76,7 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
   const upsert = (conv: Conversation) => {
     setConversations((prev) => {
       const exists = prev.some((c) => c.id === conv.id);
-      const next = exists ? prev.map((c) => (c.id === conv.id ? conv : c)) : [conv, ...prev];
-      return next;
+      return exists ? prev.map((c) => (c.id === conv.id ? conv : c)) : [conv, ...prev];
     });
   };
 
@@ -116,50 +108,6 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
         content: res.content || "(no response)",
         createdAt: Date.now(),
       };
-      const updated: Conversation = {
-        ...conv,
-        messages: [...history, assistantMsg],
-        updatedAt: Date.now(),
-      };
-      upsert(updated);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const runTool = async (conv: Conversation, history: ChatMessage[], mode: "humanize" | "detect", text: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      let content = "";
-      const apiKey = getApiKey() ?? undefined;
-      if (mode === "humanize") {
-        const res = await callHumanize({ data: { text, apiKey } });
-        content = "**[ humanized output ]**\n\n" + (res.content || "(empty)");
-      } else {
-        const res = await callDetect({ data: { text, apiKey } });
-        if (res.result) {
-          const r = res.result;
-          const bar = "█".repeat(Math.round(r.ai_probability / 5)).padEnd(20, "░");
-          content =
-            `**[ AI-detection scan ]**\n\n` +
-            `\`${bar}\` **${r.ai_probability}%** AI\n\n` +
-            `- verdict: **${r.verdict}**\n` +
-            `- confidence: ${r.confidence}\n` +
-            `- signals: ${r.signals?.map((s: string) => `\`${s}\``).join(", ") || "—"}\n\n` +
-            `${r.notes || ""}`;
-        } else {
-          content = "**[ AI-detection scan ]**\n\n" + res.raw;
-        }
-      }
-      const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content,
-        createdAt: Date.now(),
-      };
       upsert({ ...conv, messages: [...history, assistantMsg], updatedAt: Date.now() });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -168,39 +116,29 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
     }
   };
 
-  const handleSend = async (text: string, mode: SendMode = "chat") => {
+  const handleSend = async (text: string) => {
     let conv = active;
-    if (!conv) {
-      conv = newConversation();
-    }
-    const label =
-      mode === "humanize" ? `/humanize\n\n${text}` :
-      mode === "detect" ? `/detect\n\n${text}` : text;
+    if (!conv) conv = newConversation();
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: label,
+      content: text,
       createdAt: Date.now(),
     };
     const history = [...conv.messages, userMsg];
     const titled: Conversation = {
       ...conv,
-      title: conv.messages.length === 0 ? titleFrom(mode === "chat" ? text : `${mode}: ${text}`) : conv.title,
+      title: conv.messages.length === 0 ? titleFrom(text) : conv.title,
       messages: history,
       updatedAt: Date.now(),
     };
     upsert(titled);
     setActiveId(titled.id);
-    if (mode === "chat") {
-      await runChat(titled, history);
-    } else {
-      await runTool(titled, history, mode, text);
-    }
+    await runChat(titled, history);
   };
 
   const handleRegenerate = async () => {
     if (!active || active.messages.length === 0) return;
-    // Strip the last assistant message if present
     const msgs = [...active.messages];
     if (msgs[msgs.length - 1]?.role === "assistant") msgs.pop();
     if (msgs.length === 0) return;
@@ -221,7 +159,6 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
         onSelect={(id) => { setActiveId(id); setSidebarOpen(false); }}
         onNew={handleNew}
         onDelete={handleDelete}
-        onLogout={onLock}
         onChangeApiKey={onChangeApiKey}
         open={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}
@@ -237,12 +174,12 @@ function ChatApp({ onLock, onChangeApiKey }: { onLock: () => void; onChangeApiKe
             <Menu size={18} />
           </button>
           <div className="text-xs text-terminal-dim font-mono truncate flex-1">
-            <span className="text-terminal">~/sessions/</span>
+            <span className="text-terminal">~/projects/</span>
             <span>{active?.title ?? "new"}</span>
             <span className="cursor-blink"> </span>
           </div>
           <div className="text-[10px] text-terminal-dim hidden sm:block">
-            model: gemini-2.5-pro
+            model: claude-haiku-4-5
           </div>
         </header>
 
